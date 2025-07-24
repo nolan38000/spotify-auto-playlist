@@ -1,7 +1,16 @@
 services:
-  - type: cron
+  - type: web
     name: spotify-playlist-updater
-    schedule: "every day at 10:00AM"
-    runtime: python
-    buildCommand: ""
-    startCommand: "python main.py"
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: SPOTIPY_CLIENT_ID
+        sync: false
+      - key: SPOTIPY_CLIENT_SECRET
+        sync: false
+      - key: SPOTIPY_REDIRECT_URI
+        sync: false
+      - key: SPOTIFY_USERNAME
+        sync: false
