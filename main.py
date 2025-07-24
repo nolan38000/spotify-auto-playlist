@@ -1,3 +1,4 @@
+from flask import Flask, request
 import os
 import random
 import time
@@ -7,13 +8,12 @@ from spotipy.oauth2 import SpotifyOAuth
 
 # === CONFIGURATION ===
 SCOPE = "playlist-modify-private playlist-modify-public playlist-read-private"
-USERNAME = "317izldq6upf2ptacp5b4qklwjd4"  # Ton nom d'utilisateur Spotify
+USERNAME = os.getenv("317izldq6upf2ptacp5b4qklwjd4")
 PLAYLIST_NAME = "🌍 Global Hits - Les Incontournables"
 PLAYLIST_DESCRIPTION = "Une sélection des plus grands hits internationaux, tous styles confondus."
 INITIAL_TRACKS_COUNT = 700
 DAILY_CHANGE_COUNT = 5
 
-# Exclure caractères asiatiques
 ASIAN_CHAR_PATTERN = re.compile(r'[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uAC00-\uD7AF]')
 
 def contains_asian_chars(text):
@@ -81,7 +81,7 @@ def update_playlist():
         print(f"{len(uris_to_add)} titres ajoutés.")
         return
 
-    print(f"Playlist existante ({len(current_tracks)} titres). Mise à jour quotidienne...")
+    print(f"Playlist existante ({len(current_tracks)} titres). Mise à jour...")
     to_remove = random.sample(current_uris, DAILY_CHANGE_COUNT)
     sp.playlist_remove_all_occurrences_of_items(playlist_id, to_remove)
     print(f"Supprimé {len(to_remove)} titres.")
@@ -94,5 +94,22 @@ def update_playlist():
         sp.playlist_add_items(playlist_id, new_uris)
         print(f"Ajouté {len(new_uris)} titres.")
 
-if __name__ == "__main__":
+# === Flask App ===
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "✅ Serveur en ligne ! Va sur /run pour mettre à jour la playlist."
+
+@app.route('/run')
+def run_script():
     update_playlist()
+    return "🎵 Playlist mise à jour avec succès !"
+
+@app.route('/callback')
+def callback():
+    code = request.args.get('code')
+    return f"Code reçu : {code} - Tu peux fermer cette page."
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
