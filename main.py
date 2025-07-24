@@ -8,7 +8,7 @@ from spotipy.oauth2 import SpotifyOAuth
 
 # === CONFIGURATION ===
 SCOPE = "playlist-modify-private playlist-modify-public playlist-read-private"
-USERNAME = os.getenv("317izldq6upf2ptacp5b4qklwjd4")
+USERNAME = os.getenv("SPOTIFY_USERNAME")
 PLAYLIST_NAME = "🌍 Global Hits - Les Incontournables"
 PLAYLIST_DESCRIPTION = "Une sélection des plus grands hits internationaux, tous styles confondus."
 INITIAL_TRACKS_COUNT = 700
