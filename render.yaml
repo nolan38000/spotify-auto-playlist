@@ -1,0 +1,7 @@
+services:
+  - type: cron
+    name: spotify-playlist-updater
+    schedule: "every day at 10:00AM"
+    runtime: python
+    buildCommand: ""
+    startCommand: "python main.py"
