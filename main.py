@@ -67,8 +67,8 @@ def get_initial_tracks(sp, target_count):
 def update_global_playlist():
     sp = get_spotify_client()
     user_id = sp.current_user()['id']
-    playlist_name = "🌍 Global Hits - Les Incontournables"
-    playlist_description = "Une sélection des plus grands hits internationaux, tous styles confondus."
+    playlist_name = "\ud83c\udf0d Global Hits - Les Incontournables"
+    playlist_description = "Une s\u00e9lection des plus grands hits internationaux, tous styles confondus."
     playlist_id = find_or_create_playlist(sp, user_id, playlist_name, playlist_description)
 
     current_tracks = get_playlist_tracks(sp, playlist_id)
@@ -78,14 +78,14 @@ def update_global_playlist():
     DAILY_CHANGE_COUNT = 5
 
     if len(current_uris) < INITIAL_TRACKS_COUNT:
-        print("💽 Ajout initial à la playlist internationale...")
+        print("\ud83d\udccd Ajout initial \u00e0 la playlist internationale...")
         initial_tracks = get_initial_tracks(sp, INITIAL_TRACKS_COUNT)
         uris_to_add = [t['uri'] for t in initial_tracks if t['uri'] not in current_uris]
         for i in range(0, len(uris_to_add), 100):
             sp.playlist_add_items(playlist_id, uris_to_add[i:i+100])
         return
 
-    print("🔁 Mise à jour de la playlist internationale...")
+    print("\ud83d\udd01 Mise \u00e0 jour de la playlist internationale...")
     to_remove = random.sample(current_uris, min(DAILY_CHANGE_COUNT, len(current_uris)))
     sp.playlist_remove_all_occurrences_of_items(playlist_id, to_remove)
 
@@ -96,11 +96,10 @@ def update_global_playlist():
     if new_uris:
         sp.playlist_add_items(playlist_id, new_uris)
 
-# === CLASSIQUES FRANÇAIS 70-2000 ===
+# === CLASSIQUES FRAN\u00c7AIS 70-2000 ===
 def search_french_classics(sp, limit=50, offset=0):
-    query = 'year:1970-2000 tag:fr OR genre:"chanson française"'
-    results = sp.search(q=query, type='track', limit=limit, offset=offset)
-    return results['tracks']['items']
+    results = sp.search(q='year:1970-2000', type='track', limit=limit, offset=offset)
+    return [t for t in results['tracks']['items'] if t['popularity'] >= 65 and 'fr' in t.get('available_markets', [])]
 
 def get_french_tracks(sp, count):
     tracks = []
@@ -119,8 +118,8 @@ def get_french_tracks(sp, count):
 def update_french_playlist():
     sp = get_spotify_client()
     user_id = sp.current_user()['id']
-    playlist_name = "🇫🇷 Classiques Français 70-2000"
-    playlist_description = "Les plus grands tubes français des années 70 à 2000."
+    playlist_name = "\ud83c\uddeb\ud83c\uddf7 Classiques Fran\u00e7ais 70-2000"
+    playlist_description = "Les plus grands tubes fran\u00e7ais des ann\u00e9es 70 \u00e0 2000."
     playlist_id = find_or_create_playlist(sp, user_id, playlist_name, playlist_description)
 
     current_tracks = get_playlist_tracks(sp, playlist_id)
@@ -130,14 +129,14 @@ def update_french_playlist():
     DAILY_CHANGE_COUNT = 5
 
     if len(current_uris) < INITIAL_TRACKS_COUNT:
-        print("💽 Ajout initial à la playlist française...")
+        print("\ud83d\udccd Ajout initial \u00e0 la playlist fran\u00e7aise...")
         tracks = get_french_tracks(sp, INITIAL_TRACKS_COUNT)
         uris_to_add = [t['uri'] for t in tracks if t['uri'] not in current_uris]
         for i in range(0, len(uris_to_add), 100):
             sp.playlist_add_items(playlist_id, uris_to_add[i:i+100])
         return
 
-    print("🔁 Mise à jour de la playlist française...")
+    print("\ud83d\udd01 Mise \u00e0 jour de la playlist fran\u00e7aise...")
     to_remove = random.sample(current_uris, min(DAILY_CHANGE_COUNT, len(current_uris)))
     sp.playlist_remove_all_occurrences_of_items(playlist_id, to_remove)
 
@@ -153,36 +152,36 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "✅ Serveur actif. Accède à /run-all pour lancer les deux playlists."
+    return "\u2705 Serveur actif. Acc\u00e8de \u00e0 /run-all pour lancer les deux playlists."
 
 @app.route('/run-global')
 def run_global():
     try:
         update_global_playlist()
-        return "🌍 Playlist Global Hits mise à jour !"
+        return "\ud83c\udf0d Playlist Global Hits mise \u00e0 jour !"
     except Exception as e:
-        return f"❌ Erreur (global) : {e}", 500
+        return f"\u274c Erreur (global) : {e}", 500
 
 @app.route('/run-french')
 def run_french():
     try:
         update_french_playlist()
-        return "🇫🇷 Playlist Classiques Français mise à jour !"
+        return "\ud83c\uddeb\ud83c\uddf7 Playlist Classiques Fran\u00e7ais mise \u00e0 jour !"
     except Exception as e:
-        return f"❌ Erreur (français) : {e}", 500
+        return f"\u274c Erreur (fran\u00e7ais) : {e}", 500
 
 @app.route('/run-all')
 def run_all():
     try:
         update_global_playlist()
         update_french_playlist()
-        return "✅ Les deux playlists ont été mises à jour !"
+        return "\u2705 Les deux playlists ont \u00e9t\u00e9 mises \u00e0 jour !"
     except Exception as e:
-        return f"❌ Erreur globale : {e}", 500
+        return f"\u274c Erreur globale : {e}", 500
 
 @app.route('/callback')
 def callback():
-    return "🔁 Autorisation reçue. Tu peux fermer cette page."
+    return "\ud83d\udd01 Autorisation re\u00e7ue. Tu peux fermer cette page."
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
