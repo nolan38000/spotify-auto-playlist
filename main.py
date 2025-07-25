@@ -168,5 +168,6 @@ def run_both():
     except Exception as e:
         return f"❌ Erreur : {e}", 500
 
-if __name__ == "__main__":
+if __name__ == "__main__" and os.environ.get("RENDER") is None:
     app.run(host="0.0.0.0", port=10000)
+
