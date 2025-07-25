@@ -72,8 +72,7 @@ def get_initial_tracks(sp, target_count):
         time.sleep(0.3)
     return tracks[:target_count]
 
-def update_global_playlist():
-    sp = get_spotify_client()
+def update_global_playlist(sp):
     user_id = sp.current_user()['id']
     playlist_name = "🌍 Global Hits - Les Incontournables"
     playlist_description = "Une sélection des plus grands hits internationaux, tous styles confondus."
@@ -127,8 +126,7 @@ def get_french_tracks(sp, count):
         time.sleep(0.3)
     return tracks[:count]
 
-def update_french_playlist():
-    sp = get_spotify_client()
+def update_french_playlist(sp):
     user_id = sp.current_user()['id']
     playlist_name = "🇫🇷 Classiques Français 70-2000"
     playlist_description = "Les plus grands tubes français des années 70 à 2000."
@@ -172,26 +170,29 @@ def home():
 @app.route('/run-global')
 def run_global():
     try:
-        update_global_playlist()
+        sp = get_spotify_client()
+        update_global_playlist(sp)
         return "🌍 Playlist Global Hits mise à jour !"
     except Exception as e:
-        send_log_to_discord(f"❌ Erreur lors de la mise à jour Global Hits : {e}")
+        send_log_to_discord(f"❌ Erreur Global Hits : {e}")
         return f"❌ Erreur (global) : {e}", 500
 
 @app.route('/run-french')
 def run_french():
     try:
-        update_french_playlist()
+        sp = get_spotify_client()
+        update_french_playlist(sp)
         return "🇫🇷 Playlist Classiques Français mise à jour !"
     except Exception as e:
-        send_log_to_discord(f"❌ Erreur lors de la mise à jour Classiques Français : {e}")
+        send_log_to_discord(f"❌ Erreur Classiques Français : {e}")
         return f"❌ Erreur (français) : {e}", 500
 
 @app.route('/run-all')
 def run_all():
     try:
-        update_global_playlist()
-        update_french_playlist()
+        sp = get_spotify_client()
+        update_global_playlist(sp)
+        update_french_playlist(sp)
         return "✅ Les deux playlists ont été mises à jour !"
     except Exception as e:
         send_log_to_discord(f"❌ Erreur globale (run-all) : {e}")
