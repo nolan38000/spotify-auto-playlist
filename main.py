@@ -103,7 +103,9 @@ def update_global_playlist():
 
     if new_uris:
         sp.playlist_add_items(playlist_id, new_uris)
-    send_log_to_discord(f"🌍 Playlist **Global Hits** mise à jour : {len(new_uris)} titres ajoutés, {len(to_remove)} supprimés.")
+        send_log_to_discord(f"🌍 Playlist **Global Hits** mise à jour : {len(new_uris)} titres ajoutés, {len(to_remove)} supprimés.")
+    else:
+        send_log_to_discord(f"⚠️ Playlist **Global Hits** mise à jour : 0 titres ajoutés, {len(to_remove)} supprimés. Aucun titre neuf trouvé.")
 
 # === CLASSIQUES FRANÇAIS 70-2000 ===
 def search_french_classics(sp, limit=50, offset=0):
@@ -156,7 +158,9 @@ def update_french_playlist():
 
     if new_uris:
         sp.playlist_add_items(playlist_id, new_uris)
-    send_log_to_discord(f"🇫🇷 Playlist **Classiques Français** mise à jour : {len(new_uris)} titres ajoutés, {len(to_remove)} supprimés.")
+        send_log_to_discord(f"🇫🇷 Playlist **Classiques Français** mise à jour : {len(new_uris)} titres ajoutés, {len(to_remove)} supprimés.")
+    else:
+        send_log_to_discord(f"⚠️ Playlist **Classiques Français** mise à jour : 0 titres ajoutés, {len(to_remove)} supprimés. Aucun titre neuf trouvé.")
 
 # === FLASK ===
 app = Flask(__name__)
