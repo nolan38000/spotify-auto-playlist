@@ -8,46 +8,17 @@ from spotipy.oauth2 import SpotifyOAuth
 
 # === CONFIGURATION ===
 SCOPE = "playlist-modify-private playlist-modify-public playlist-read-private"
-USERNAME = "317izldq6upf2ptacp5b4qklwjd4"  # Ton vrai username Spotify
-PLAYLIST_NAME = "🌍 Global Hits - Les Incontournables"
-PLAYLIST_DESCRIPTION = "Une sélection des plus grands hits internationaux, tous styles confondus."
+USERNAME = "317izldq6upf2ptacp5b4qklwjd4"  # Ton username Spotify
 INITIAL_TRACKS_COUNT = 700
 DAILY_CHANGE_COUNT = 5
 
-
-def update_french_classics_playlist():
-    sp = get_spotify_client()
-    user_id = sp.current_user()['id']
-
-    playlist_name = "🇫🇷 Classiques Français 70-2000"
-    playlist_description = "Les plus grands tubes français des années 70 à 2000."
-
-    playlist_id = find_or_create_playlist(sp, user_id, playlist_name, playlist_description)
-    current_tracks = get_playlist_tracks(sp, playlist_id)
-    current_uris = [t['uri'] for t in current_tracks]
-
-    print(f"🔁 Mise à jour de la playlist '{playlist_name}' ({len(current_tracks)} titres actuels)")
-
-    if len(current_tracks) > 0:
-        to_remove = random.sample(current_uris, min(10, len(current_uris)))
-        sp.playlist_remove_all_occurrences_of_items(playlist_id, to_remove)
-        print(f"❌ {len(to_remove)} titres supprimés")
-
-    query = "genre:chanson year:1970-2000 tag:fr"
-    results = sp.search(q=query, type='track', limit=50)
-    new_tracks = [t for t in results['tracks']['items'] if t['uri'] not in current_uris]
-    new_uris = [t['uri'] for t in new_tracks[:10]]
-
-    if new_uris:
-        sp.playlist_add_items(playlist_id, new_uris)
-        print(f"✅ {len(new_uris)} titres ajoutés")
-
-
+# === EXPRESSIONS RÉGULIÈRES POUR FILTRER ===
 ASIAN_CHAR_PATTERN = re.compile(r'[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uAC00-\uD7AF]')
 
 def contains_asian_chars(text):
     return bool(ASIAN_CHAR_PATTERN.search(text))
 
+# === CLIENT SPOTIFY ===
 def get_spotify_client():
     return spotipy.Spotify(auth_manager=SpotifyOAuth(
         client_id=os.getenv("SPOTIPY_CLIENT_ID"),
@@ -58,6 +29,7 @@ def get_spotify_client():
         cache_path=f".cache-{USERNAME}"
     ))
 
+# === OUTILS DE BASE ===
 def find_or_create_playlist(sp, user_id, name, description):
     playlists = sp.user_playlists(user_id)
     for p in playlists['items']:
@@ -75,6 +47,7 @@ def get_playlist_tracks(sp, playlist_id):
         tracks.extend(results['items'])
     return [t['track'] for t in tracks if t['track']]
 
+# === PLAYLIST 1 : GLOBAL HITS ===
 def search_global_hits(sp, limit=50, offset=0):
     results = sp.search(q='year:1980-2025', type='track', limit=limit, offset=offset)
     return [t for t in results['tracks']['items'] if t['popularity'] >= 90 and not contains_asian_chars(t['name'])]
@@ -98,7 +71,12 @@ def get_initial_tracks(sp, target_count):
 def update_playlist():
     sp = get_spotify_client()
     user_id = sp.current_user()['id']
-    playlist_id = find_or_create_playlist(sp, user_id, PLAYLIST_NAME, PLAYLIST_DESCRIPTION)
+    playlist_id = find_or_create_playlist(
+        sp, user_id,
+        "🌍 Global Hits - Les Incontournables",
+        "Une sélection des plus grands hits internationaux, tous styles confondus."
+    )
+
     current_tracks = get_playlist_tracks(sp, playlist_id)
     current_uris = [t['uri'] for t in current_tracks]
 
@@ -124,18 +102,47 @@ def update_playlist():
         sp.playlist_add_items(playlist_id, new_uris)
         print(f"Ajouté {len(new_uris)} titres.")
 
-# === FLASK ===
+# === PLAYLIST 2 : CLASSIQUES FRANÇAIS ===
+def update_french_classics_playlist():
+    sp = get_spotify_client()
+    user_id = sp.current_user()['id']
+    playlist_id = find_or_create_playlist(
+        sp, user_id,
+        "🇫🇷 Classiques Français 70-2000",
+        "Les plus grands tubes français des années 70 à 2000."
+    )
+
+    current_tracks = get_playlist_tracks(sp, playlist_id)
+    current_uris = [t['uri'] for t in current_tracks]
+
+    print(f"🔁 Mise à jour de la playlist FR ({len(current_tracks)} titres)")
+
+    if len(current_uris) > 0:
+        to_remove = random.sample(current_uris, min(10, len(current_uris)))
+        sp.playlist_remove_all_occurrences_of_items(playlist_id, to_remove)
+        print(f"❌ Supprimé {len(to_remove)} titres")
+
+    query = "genre:chanson year:1970-2000 tag:fr"
+    results = sp.search(q=query, type='track', limit=50)
+    new_tracks = [t for t in results['tracks']['items'] if t['uri'] not in current_uris]
+    new_uris = [t['uri'] for t in new_tracks[:10]]
+
+    if new_uris:
+        sp.playlist_add_items(playlist_id, new_uris)
+        print(f"✅ Ajouté {len(new_uris)} titres")
+
+# === FLASK APP ===
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "✅ Serveur en ligne. Va sur /run pour mettre à jour la playlist."
+    return "✅ Serveur en ligne. Va sur /run, /run-french ou /run-all."
 
 @app.route('/run')
 def run_script():
     try:
         update_playlist()
-        return "🎵 Playlist mise à jour avec succès !"
+        return "🎵 Playlist Global Hits mise à jour avec succès !"
     except Exception as e:
         return f"❌ Erreur : {e}", 500
 
@@ -143,10 +150,18 @@ def run_script():
 def run_french():
     try:
         update_french_classics_playlist()
-        return "🇫🇷 Playlist française mise à jour avec succès !"
+        return "🇫🇷 Playlist Classiques Français mise à jour avec succès !"
     except Exception as e:
         return f"❌ Erreur : {e}", 500
 
+@app.route('/run-all')
+def run_all():
+    try:
+        update_playlist()
+        update_french_classics_playlist()
+        return "🎶 Les deux playlists ont été mises à jour avec succès !"
+    except Exception as e:
+        return f"❌ Erreur : {e}", 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
