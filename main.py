@@ -14,6 +14,35 @@ PLAYLIST_DESCRIPTION = "Une sélection des plus grands hits internationaux, tous
 INITIAL_TRACKS_COUNT = 700
 DAILY_CHANGE_COUNT = 5
 
+
+def update_french_classics_playlist():
+    sp = get_spotify_client()
+    user_id = sp.current_user()['id']
+
+    playlist_name = "🇫🇷 Classiques Français 70-2000"
+    playlist_description = "Les plus grands tubes français des années 70 à 2000."
+
+    playlist_id = find_or_create_playlist(sp, user_id, playlist_name, playlist_description)
+    current_tracks = get_playlist_tracks(sp, playlist_id)
+    current_uris = [t['uri'] for t in current_tracks]
+
+    print(f"🔁 Mise à jour de la playlist '{playlist_name}' ({len(current_tracks)} titres actuels)")
+
+    if len(current_tracks) > 0:
+        to_remove = random.sample(current_uris, min(10, len(current_uris)))
+        sp.playlist_remove_all_occurrences_of_items(playlist_id, to_remove)
+        print(f"❌ {len(to_remove)} titres supprimés")
+
+    query = "genre:chanson year:1970-2000 tag:fr"
+    results = sp.search(q=query, type='track', limit=50)
+    new_tracks = [t for t in results['tracks']['items'] if t['uri'] not in current_uris]
+    new_uris = [t['uri'] for t in new_tracks[:10]]
+
+    if new_uris:
+        sp.playlist_add_items(playlist_id, new_uris)
+        print(f"✅ {len(new_uris)} titres ajoutés")
+
+
 ASIAN_CHAR_PATTERN = re.compile(r'[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uAC00-\uD7AF]')
 
 def contains_asian_chars(text):
@@ -109,6 +138,15 @@ def run_script():
         return "🎵 Playlist mise à jour avec succès !"
     except Exception as e:
         return f"❌ Erreur : {e}", 500
+
+@app.route('/run-french')
+def run_french():
+    try:
+        update_french_classics_playlist()
+        return "🇫🇷 Playlist française mise à jour avec succès !"
+    except Exception as e:
+        return f"❌ Erreur : {e}", 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
