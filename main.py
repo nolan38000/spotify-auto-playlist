@@ -45,7 +45,7 @@ def send_log_to_discord(message):
     try:
         requests.post(WEBHOOK_URL, json={"content": message})
     except Exception as e:
-        print(f"❌ Erreur lors de l'envoi Discord : {e}")
+        print(f"❌ Erreur envoi webhook : {e}")
 
 # === GLOBAL HITS ===
 ASIAN_CHAR_PATTERN = re.compile(r'[\u3040-\u30FF\u3400-\u9FFF\uF900-\uFAFF\uAC00-\uD7AF]')
@@ -82,7 +82,7 @@ def update_global_playlist():
     current_tracks = get_playlist_tracks(sp, playlist_id)
     current_uris = [t['uri'] for t in current_tracks if t]
 
-    INITIAL_TRACKS_COUNT = 700
+    INITIAL_TRACKS_COUNT = 300
     DAILY_CHANGE_COUNT = 5
 
     if len(current_uris) < INITIAL_TRACKS_COUNT:
@@ -92,7 +92,6 @@ def update_global_playlist():
         for i in range(0, len(uris_to_add), 100):
             sp.playlist_add_items(playlist_id, uris_to_add[i:i+100])
         send_log_to_discord(f"📀 Ajout initial de {len(uris_to_add)} titres à la playlist **Global Hits**.")
-        return
 
     print("🔁 Mise à jour de la playlist internationale...")
     to_remove = random.sample(current_uris, min(DAILY_CHANGE_COUNT, len(current_uris)))
@@ -136,7 +135,7 @@ def update_french_playlist():
     current_tracks = get_playlist_tracks(sp, playlist_id)
     current_uris = [t['uri'] for t in current_tracks if t]
 
-    INITIAL_TRACKS_COUNT = 200
+    INITIAL_TRACKS_COUNT = 100
     DAILY_CHANGE_COUNT = 5
 
     if len(current_uris) < INITIAL_TRACKS_COUNT:
@@ -146,7 +145,6 @@ def update_french_playlist():
         for i in range(0, len(uris_to_add), 100):
             sp.playlist_add_items(playlist_id, uris_to_add[i:i+100])
         send_log_to_discord(f"📀 Ajout initial de {len(uris_to_add)} titres à la playlist **Classiques Français**.")
-        return
 
     print("🔁 Mise à jour de la playlist française...")
     to_remove = random.sample(current_uris, min(DAILY_CHANGE_COUNT, len(current_uris)))
@@ -173,6 +171,7 @@ def run_global():
         update_global_playlist()
         return "🌍 Playlist Global Hits mise à jour !"
     except Exception as e:
+        send_log_to_discord(f"❌ Erreur lors de la mise à jour Global Hits : {e}")
         return f"❌ Erreur (global) : {e}", 500
 
 @app.route('/run-french')
@@ -181,6 +180,7 @@ def run_french():
         update_french_playlist()
         return "🇫🇷 Playlist Classiques Français mise à jour !"
     except Exception as e:
+        send_log_to_discord(f"❌ Erreur lors de la mise à jour Classiques Français : {e}")
         return f"❌ Erreur (français) : {e}", 500
 
 @app.route('/run-all')
@@ -190,6 +190,7 @@ def run_all():
         update_french_playlist()
         return "✅ Les deux playlists ont été mises à jour !"
     except Exception as e:
+        send_log_to_discord(f"❌ Erreur globale (run-all) : {e}")
         return f"❌ Erreur globale : {e}", 500
 
 @app.route('/callback')
