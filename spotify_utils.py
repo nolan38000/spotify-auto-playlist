@@ -6,6 +6,9 @@ import requests
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # === CONFIGURATION ===
 SCOPE = "playlist-modify-private playlist-modify-public playlist-read-private"
 USERNAME = "317izldq6upf2ptacp5b4qklwjd4"
