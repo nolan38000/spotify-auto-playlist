@@ -56,12 +56,12 @@ def get_initial_tracks(sp, target_count):
     while len(tracks) < target_count and offset < max_offset:
         batch = search_global_hits(sp, limit=batch_size, offset=offset)
         for t in batch:
-            if t not in tracks:
+            if t['uri'] not in [track['uri'] for track in tracks]:
                 tracks.append(t)
             if len(tracks) >= target_count:
                 break
         offset += batch_size
-        time.sleep(0.5)
+        time.sleep(0.3)
     return tracks[:target_count]
 
 def update_global_playlist():
@@ -72,26 +72,50 @@ def update_global_playlist():
     playlist_id = find_or_create_playlist(sp, user_id, playlist_name, playlist_description)
 
     current_tracks = get_playlist_tracks(sp, playlist_id)
-    current_uris = [t['uri'] for t in current_tracks]
-    DAILY_CHANGE_COUNT = 5
-    INITIAL_TRACKS_COUNT = 700
+    current_uris = [t['uri'] for t in current_tracks if t]
 
-    if len(current_tracks) < INITIAL_TRACKS_COUNT:
+    INITIAL_TRACKS_COUNT = 700
+    DAILY_CHANGE_COUNT = 5
+
+    if len(current_uris) < INITIAL_TRACKS_COUNT:
+        print("💽 Ajout initial à la playlist internationale...")
         initial_tracks = get_initial_tracks(sp, INITIAL_TRACKS_COUNT)
         uris_to_add = [t['uri'] for t in initial_tracks if t['uri'] not in current_uris]
         for i in range(0, len(uris_to_add), 100):
             sp.playlist_add_items(playlist_id, uris_to_add[i:i+100])
         return
 
-    to_remove = random.sample(current_uris, DAILY_CHANGE_COUNT)
+    print("🔁 Mise à jour de la playlist internationale...")
+    to_remove = random.sample(current_uris, min(DAILY_CHANGE_COUNT, len(current_uris)))
     sp.playlist_remove_all_occurrences_of_items(playlist_id, to_remove)
+
     new_tracks = get_initial_tracks(sp, DAILY_CHANGE_COUNT * 3)
     new_uris = [t['uri'] for t in new_tracks if t['uri'] not in current_uris]
     new_uris = new_uris[:DAILY_CHANGE_COUNT]
+
     if new_uris:
         sp.playlist_add_items(playlist_id, new_uris)
 
-# === PLAYLIST FRANÇAISE 70-2000 ===
+# === CLASSIQUES FRANÇAIS 70-2000 ===
+def search_french_classics(sp, limit=50, offset=0):
+    query = 'year:1970-2000 tag:fr OR genre:"chanson française"'
+    results = sp.search(q=query, type='track', limit=limit, offset=offset)
+    return results['tracks']['items']
+
+def get_french_tracks(sp, count):
+    tracks = []
+    offset = 0
+    while len(tracks) < count and offset < 1000:
+        batch = search_french_classics(sp, limit=50, offset=offset)
+        for t in batch:
+            if t['uri'] not in [track['uri'] for track in tracks]:
+                tracks.append(t)
+            if len(tracks) >= count:
+                break
+        offset += 50
+        time.sleep(0.3)
+    return tracks[:count]
+
 def update_french_playlist():
     sp = get_spotify_client()
     user_id = sp.current_user()['id']
@@ -100,18 +124,26 @@ def update_french_playlist():
     playlist_id = find_or_create_playlist(sp, user_id, playlist_name, playlist_description)
 
     current_tracks = get_playlist_tracks(sp, playlist_id)
-    current_uris = [t['uri'] for t in current_tracks]
+    current_uris = [t['uri'] for t in current_tracks if t]
 
-    # Supprimer 10 morceaux aléatoires s’il y en a assez
-    if len(current_uris) >= 10:
-        to_remove = random.sample(current_uris, 10)
-        sp.playlist_remove_all_occurrences_of_items(playlist_id, to_remove)
+    INITIAL_TRACKS_COUNT = 200
+    DAILY_CHANGE_COUNT = 5
 
-    # Ajouter des nouveautés
-    query = 'year:1970-2000 tag:fr OR genre:"chanson française"'
-    results = sp.search(q=query, type='track', limit=50)
-    new_tracks = [t for t in results['tracks']['items'] if t['uri'] not in current_uris]
-    new_uris = [t['uri'] for t in new_tracks[:10]]
+    if len(current_uris) < INITIAL_TRACKS_COUNT:
+        print("💽 Ajout initial à la playlist française...")
+        tracks = get_french_tracks(sp, INITIAL_TRACKS_COUNT)
+        uris_to_add = [t['uri'] for t in tracks if t['uri'] not in current_uris]
+        for i in range(0, len(uris_to_add), 100):
+            sp.playlist_add_items(playlist_id, uris_to_add[i:i+100])
+        return
+
+    print("🔁 Mise à jour de la playlist française...")
+    to_remove = random.sample(current_uris, min(DAILY_CHANGE_COUNT, len(current_uris)))
+    sp.playlist_remove_all_occurrences_of_items(playlist_id, to_remove)
+
+    new_tracks = get_french_tracks(sp, DAILY_CHANGE_COUNT * 3)
+    new_uris = [t['uri'] for t in new_tracks if t['uri'] not in current_uris]
+    new_uris = new_uris[:DAILY_CHANGE_COUNT]
 
     if new_uris:
         sp.playlist_add_items(playlist_id, new_uris)
@@ -129,7 +161,7 @@ def run_global():
         update_global_playlist()
         return "🌍 Playlist Global Hits mise à jour !"
     except Exception as e:
-        return f"❌ Erreur : {e}", 500
+        return f"❌ Erreur (global) : {e}", 500
 
 @app.route('/run-french')
 def run_french():
@@ -137,7 +169,7 @@ def run_french():
         update_french_playlist()
         return "🇫🇷 Playlist Classiques Français mise à jour !"
     except Exception as e:
-        return f"❌ Erreur : {e}", 500
+        return f"❌ Erreur (français) : {e}", 500
 
 @app.route('/run-all')
 def run_all():
@@ -146,7 +178,7 @@ def run_all():
         update_french_playlist()
         return "✅ Les deux playlists ont été mises à jour !"
     except Exception as e:
-        return f"❌ Erreur : {e}", 500
+        return f"❌ Erreur globale : {e}", 500
 
 @app.route('/callback')
 def callback():
