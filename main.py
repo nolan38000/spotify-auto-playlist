@@ -48,7 +48,7 @@ def get_playlist_tracks(sp, playlist_id):
 
 def search_global_hits(sp, limit=50, offset=0):
     results = sp.search(q='year:1980-2025', type='track', limit=limit, offset=offset)
-    return [t for t in results['tracks']['items'] if t['popularity'] >= 80 and not contains_asian_chars(t['name'])]
+    return [t for t in results['tracks']['items'] if t['popularity'] >= 90 and not contains_asian_chars(t['name'])]
 
 def get_initial_tracks(sp, target_count):
     tracks = []
