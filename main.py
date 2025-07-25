@@ -1,15 +1,17 @@
-from flask import Flask
+from flask import Flask 
 import os
 import random
 import time
 import re
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+import requests
 
 # === CONFIGURATION ===
 SCOPE = "playlist-modify-private playlist-modify-public playlist-read-private"
-USERNAME = "317izldq6upf2ptacp5b4qklwjd4"  # Ton vrai username Spotify
+USERNAME = "317izldq6upf2ptacp5b4qklwjd4"
 CACHE_PATH = f".cache-{USERNAME}"
+WEBHOOK_URL = "https://discord.com/api/webhooks/1398352899670671544/tHEbGMMuTqeQl6n_tCnQP5NXVjXUEi_qwJ89i0fCpW0cAKQ7NAtTTNyaKAZnNsFN6iwQ"
 
 # === UTILITAIRE SPOTIFY ===
 def get_spotify_client():
@@ -38,6 +40,12 @@ def get_playlist_tracks(sp, playlist_id):
         results = sp.next(results)
         tracks.extend(results['items'])
     return [t['track'] for t in tracks if t['track']]
+
+def send_log_to_discord(message):
+    try:
+        requests.post(WEBHOOK_URL, json={"content": message})
+    except Exception as e:
+        print(f"❌ Erreur lors de l'envoi Discord : {e}")
 
 # === GLOBAL HITS ===
 ASIAN_CHAR_PATTERN = re.compile(r'[\u3040-\u30FF\u3400-\u9FFF\uF900-\uFAFF\uAC00-\uD7AF]')
@@ -83,6 +91,7 @@ def update_global_playlist():
         uris_to_add = [t['uri'] for t in initial_tracks if t['uri'] not in current_uris]
         for i in range(0, len(uris_to_add), 100):
             sp.playlist_add_items(playlist_id, uris_to_add[i:i+100])
+        send_log_to_discord(f"📀 Ajout initial de {len(uris_to_add)} titres à la playlist **Global Hits**.")
         return
 
     print("🔁 Mise à jour de la playlist internationale...")
@@ -95,6 +104,7 @@ def update_global_playlist():
 
     if new_uris:
         sp.playlist_add_items(playlist_id, new_uris)
+    send_log_to_discord(f"🌍 Playlist **Global Hits** mise à jour : {len(new_uris)} titres ajoutés, {len(to_remove)} supprimés.")
 
 # === CLASSIQUES FRANÇAIS 70-2000 ===
 def search_french_classics(sp, limit=50, offset=0):
@@ -135,6 +145,7 @@ def update_french_playlist():
         uris_to_add = [t['uri'] for t in tracks if t['uri'] not in current_uris]
         for i in range(0, len(uris_to_add), 100):
             sp.playlist_add_items(playlist_id, uris_to_add[i:i+100])
+        send_log_to_discord(f"📀 Ajout initial de {len(uris_to_add)} titres à la playlist **Classiques Français**.")
         return
 
     print("🔁 Mise à jour de la playlist française...")
@@ -147,6 +158,7 @@ def update_french_playlist():
 
     if new_uris:
         sp.playlist_add_items(playlist_id, new_uris)
+    send_log_to_discord(f"🇫🇷 Playlist **Classiques Français** mise à jour : {len(new_uris)} titres ajoutés, {len(to_remove)} supprimés.")
 
 # === FLASK ===
 app = Flask(__name__)
